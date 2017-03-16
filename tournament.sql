@@ -1,21 +1,22 @@
 -- Table definitions for the tournament project.
 --
 
--- Delete the players and matches tables if they currently exist.
-drop table if exists players;
-drop table if exists matches;
+-- Delete the tournament database if it currently exists.
+drop database if exists tournament;
+create database tournament;
+\c tournament;
 
 -- Create a table to store the players of the tournament.
 create table players (
     name    text,
-    ID  serial
+    ID  serial primary key
 );
 
 -- Create a table to store the match results.
 create table matches (
-    Winner_ID   integer,
-    Loser_ID    integer,
-    Match_ID    serial
+    Winner_ID   integer references players(ID),
+    Loser_ID    integer references players(ID),
+    Match_ID    serial primary key
 );
 
 -- Create views to assist SQL queries used in Python code.
@@ -41,3 +42,13 @@ create view match_total as
         from players left join matches on
             players.id = matches.loser_id or players.id = matches.winner_id
         group by players.id order by player_matches DESC;
+
+-- Create a view that generates a table of players in the order of their
+-- number of wins.
+create view player_standings as
+    select players.ID, players.name,
+            win_total.wins, match_total.player_matches from
+        players left join win_total on
+            players.id = win_total.id join match_total on
+                players.id=match_total.id
+        order by win_total.wins DESC;
